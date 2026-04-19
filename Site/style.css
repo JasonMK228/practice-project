@@ -1,0 +1,63 @@
+body {
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif, sans-serif;
+  margin: 0;
+  background: #f4f4f4;
+  background-image: url("фон.png");
+  background-size: cover;
+  background-position: center;
+}
+header {
+  background: #8685EF;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+nav a {
+  display: inline-block;
+  background-color: #555;
+  color: white;
+  padding: 10px 20px;
+  margin: 0 8px;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 30px;
+  transition: 0.2s;
+}
+
+nav a:hover {
+  background-color: #777;
+  transform: scale(1.05);
+}
+.container {
+  max-width: 1000px;
+  margin: 20px auto;
+  background: #f3f2f2;
+  padding: 20px;
+  border-radius: 8px;
+}
+footer {
+  text-align: center;
+  padding: 1rem;
+  background: #8685EF;
+  color: white;
+  margin-top: 20px;
+}
+img {
+  max-width: 100%;
+  height: auto;
+}
+.post {
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+}
+h1 {
+  font-size: 64px;
+}
+h2 {
+  font-size: 48px;
+}
+h3 {
+  font-size: 22px;
+}
