@@ -8,12 +8,6 @@ body {
   font-size: 16px;
   line-height: 1.6;
 }
-header {
-  background: #8685EF;
-  color: white;
-  padding: 1rem;
-  text-align: center;
-}
 nav a {
   display: inline-block;
   background-color: #555;
@@ -38,17 +32,17 @@ nav a:hover {
   padding: 20px;
   border-radius: 8px;
 }
-footer {
-  text-align: center;
-  padding: 1rem;
+header {
   background: #8685EF;
   color: white;
-  margin-top: 20px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: nowrap;
 }
-img {
-  max-width: 100%;
-  height: auto;
-}
+
 .post {
   border-bottom: 1px solid #ddd;
   margin-bottom: 20px;
@@ -77,4 +71,37 @@ h3 {
 p {
   font-size: 16px;
   margin: 0 0 1em 0;
+}
+
+.logo {
+  height: clamp(36px, 6vw, 64px);
+  width: auto;
+  display: block;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+header nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  background: #8685EF;
+  color: white;
+  margin-top: 20px;
 }
