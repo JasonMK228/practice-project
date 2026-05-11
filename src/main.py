@@ -1,17 +1,22 @@
 import logging
 import random
+import os
 from datetime import datetime, timedelta
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-# ------------------- НАСТРОЙКИ -------------------
-BOT_TOKEN = "8761891710:AAGOfClH0NfOnM3WEE2ZjTnQ1nzF-mE13ps"
+# токен у нас в .env файле
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError(
+        "BOT_TOKEN не задан. Установите переменную окружения BOT_TOKEN или запустите: BOT_TOKEN='<token>' /usr/local/bin/python3 src/main.py"
+    )
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 user_last_active = {}
 
-# ------------------- ВОПРОСЫ ВИКТОРИНЫ -------------------
 quiz_questions = [
     {
         "question": "Какая формула описывает второй закон Ньютона?",
@@ -33,7 +38,6 @@ quiz_questions = [
     }
 ]
 
-# ------------------- ФАКТЫ -------------------
 PHYSICS_FACTS = [
     "Скорость света в вакууме — 299 792 458 м/с.",
     "Чёрные дыры испаряются — это открытие Стивена Хокинга.",
@@ -47,7 +51,6 @@ PHYSICS_FACTS = [
     "Молния может быть в 5 раз горячее поверхности Солнца."
 ]
 
-# ------------------- ГЛАВНОЕ МЕНЮ -------------------
 async def main_menu(update_or_query, context, is_query=True):
     keyboard = [
         [InlineKeyboardButton("📚 Механика", callback_data="theme_mech")],
@@ -71,10 +74,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_last_active[user.id] = datetime.now()
     await main_menu(update, context, is_query=False)
 
-# ------------------- ОБРАБОТЧИК КНОПОК -------------------
+#обработчик нажатий на кнопки - отвечает за навигацию и викторину
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()  # просто убираем "часики", но никакой подсказки не показываем
+    await query.answer()  # просто убираем часики, но никакой подсказки не показываем
     user_id = query.from_user.id
     user_last_active[user_id] = datetime.now()
     data = query.data
@@ -88,20 +91,20 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "theme_elec":
         text = "⚡ *Электричество*\n\nЗакон Ома, мощность, цепи постоянного тока.\nСсылки:\n- [Закон Ома для чайников](https://www.youtube.com/watch?v=57KUxXqyTNE)\n- [Схемы соединения](https://www.youtube.com/watch?v=p1ufHMDZoIY)\nСовет: нарисуй схему — половина дела."
-        await query.edit_message_text(text=text, parse_mode="Markdown", reply_markup=back_markup)
+        await query.edit_message_text(text=text, parse_mode=ParseMode.MARKDOWN, reply_markup=back_markup)
 
     elif data == "theme_thermo":
         text = "🌀 *Термодинамика*\n\nТемпература, давление, внутренняя энергия.\nПолезное:\n- [Первый закон термодинамики](https://www.youtube.com/watch?v=-ES4mpQk1XM)\n- [Изопроцессы на пальцах](https://www.youtube.com/watch?v=M6LZas6_ptQ)\nЗапомни: Q = ΔU + A"
-        await query.edit_message_text(text=text, parse_mode="Markdown", reply_markup=back_markup)
+        await query.edit_message_text(text=text, parse_mode=ParseMode.MARKDOWN, reply_markup=back_markup)
 
     elif data == "materials":
         text = "📖 *Все ресурсы проекта*:\n\n🔹 [VK сообщество](https://vk.com/simplephysicsmp)\n🔹 [YouTube](https://youtube.com/@Simplephysics-mpu?si=vUpu2Xtzsi1KuwgK)\n🔹 [РуТуб](https://rutube.ru/channel/43627801)\n🔹 [Telegram канал](https://t.me/simplephysics_polyteh)\n\nСледи за обновлениями!"
-        await query.edit_message_text(text=text, parse_mode="Markdown", reply_markup=back_markup)
+        await query.edit_message_text(text=text, parse_mode=ParseMode.MARKDOWN, reply_markup=back_markup)
 
     elif data == "fact":
         fact = random.choice(PHYSICS_FACTS)
         text = f"🔬 *Случайный факт о физике:*\n\n{fact}"
-        await query.edit_message_text(text=text, parse_mode="Markdown", reply_markup=back_markup)
+        await query.edit_message_text(text=text, parse_mode=ParseMode.MARKDOWN, reply_markup=back_markup)
 
     elif data == "exam":
         ege_questions = [
@@ -115,15 +118,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "main_menu":
         await main_menu(query, context, is_query=True)
 
-    # ------------------- ВИКТОРИНА -------------------
+    #викторина
     elif data == "quiz_start":
         context.user_data["quiz_score"] = 0
         context.user_data["quiz_index"] = 0
-        # Отправляем первый вопрос
+        # отправляем первый вопрос (новым сообщением, чтобы не мешать навигацию)
         await send_quiz_question(query, context)
 
     elif data.startswith("quiz_answer_"):
-        # Получаем индекс ответа и текущий вопрос
+        # получаем индекс ответа и текущий вопрос
         parts = data.split("_")
         selected = int(parts[2])
         index = context.user_data.get("quiz_index", 0)
@@ -140,30 +143,30 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 correct_text = q["options"][q["correct"]]
                 result_text = f"❌ *Неверно.* Правильный ответ: {correct_text}. {q['explanation']}"
 
-            # 1. Редактируем сообщение с вопросом: убираем кнопки и помечаем как отвеченный
+            # редактирование текста с вопросом
             try:
                 await query.edit_message_text(
                     text=f"❓ *Вопрос {index+1}:* {q['question']}\n\n(Уже отвечен)",
-                    parse_mode="Markdown"
+                    parse_mode=ParseMode.MARKDOWN
                 )
             except:
                 pass
 
-            # 2. Отправляем новое сообщение с результатом
+            # новое сообщение с результатом
             await query.message.reply_text(result_text, parse_mode="Markdown")
 
-            # 3. Переходим к следующему вопросу или завершаем
+            # переход к след вопросу или завершение
             context.user_data["quiz_index"] = index + 1
 
             if context.user_data["quiz_index"] < len(quiz_questions):
-                # Отправляем следующий вопрос (новым сообщением)
+                # следующий вопрос новым сообщением
                 await send_quiz_question(query, context)
             else:
                 total = len(quiz_questions)
                 final_score = context.user_data.get("quiz_score", 0)
                 final_text = f"🎉 *Викторина окончена!*\nТвой результат: {final_score} из {total}\nМолодец! Продолжай изучать физику."
-                await query.message.reply_text(final_text, parse_mode="Markdown", reply_markup=back_markup)
-                # Очищаем данные викторины
+                await query.message.reply_text(final_text, parse_mode=ParseMode.MARKDOWN, reply_markup=back_markup)
+                # очищение данных викторины
                 context.user_data.pop("quiz_index", None)
                 context.user_data.pop("quiz_score", None)
         else:
@@ -172,9 +175,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.edit_message_text("Неизвестная команда. Попробуй /start", reply_markup=back_markup)
 
-# ------------------- ФУНКЦИЯ ОТПРАВКИ ВОПРОСА -------------------
+# функция отправки вопроса викторины
 async def send_quiz_question(query, context):
-    """Отправляет новый вопрос викторины (новым сообщением)"""
     index = context.user_data.get("quiz_index", 0)
     if index >= len(quiz_questions):
         return
@@ -184,12 +186,12 @@ async def send_quiz_question(query, context):
         keyboard.append([InlineKeyboardButton(opt, callback_data=f"quiz_answer_{i}")])
     reply_markup = InlineKeyboardMarkup(keyboard)
     text = f"❓ *Вопрос {index+1}:* {q['question']}"
-    await query.message.reply_text(text=text, parse_mode="Markdown", reply_markup=reply_markup)
+    await query.message.reply_text(text=text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
 
 # ------------------- КОМАНДЫ /materials, /exam -------------------
 async def materials_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "📖 *Все ресурсы проекта*:\n\n🔹 [VK сообщество](https://vk.com/mospolyphysics)\n🔹 [Pinterest](https://pinterest.com/mospolyphysics)\n🔹 [Дзен](https://dzen.ru/mospolyphysics)\n🔹 [Telegram канал](https://t.me/mospolyphysics)"
-    await update.message.reply_text(text=text, parse_mode="Markdown")
+    await update.message.reply_text(text=text, parse_mode=ParseMode.MARKDOWN)
 
 async def exam_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ege_questions = [
@@ -197,19 +199,37 @@ async def exam_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Сопротивление проводника 10 Ом, ток 2 А. Какое напряжение?",
         "Чему равна сила тяжести для тела массой 5 кг? (g=10 м/с²)"
     ]
-    await update.message.reply_text(f"🎓 *Пример вопроса из ЕГЭ:*\n\n{random.choice(ege_questions)}\n\nПопробуй решить сам. Ответы и разбор — в нашем VK.", parse_mode="Markdown")
+    await update.message.reply_text(f"🎓 *Пример вопроса из ЕГЭ:*\n\n{random.choice(ege_questions)}\n\nПопробуй решить сам. Ответы и разбор — в нашем VK.", parse_mode=ParseMode.MARKDOWN)
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Я не понял команду. Напиши /start")
+
+
+async def ping_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """команда для проверки, что бот отвечает"""
+    await update.message.reply_text("pong")
+
+
+async def handle_error(update: object, context: ContextTypes.DEFAULT_TYPE):
+    """глобальный обработчик ошибок"""
+    logging.exception("Ошибка при обработке обновления:")
+    # Пытаемся уведомить пользователя, что произошла ошибка
+    try:
+        if hasattr(update, "message") and update.message:
+            await update.message.reply_text("Произошла ошибка на сервере. Администратор уведомлен!")
+    except Exception:
+        logging.exception("не удалось отправить сообщение об ошибке пользователю")
 
 # ------------------- ЗАПУСК -------------------
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("ping", ping_command))
     app.add_handler(CommandHandler("materials", materials_command))
     app.add_handler(CommandHandler("exam", exam_command))
     app.add_handler(CallbackQueryHandler(button_handler))
     app.add_handler(MessageHandler(filters.COMMAND, unknown))
+    app.add_error_handler(handle_error)
 
     print("Бот запущен!")
     app.run_polling()
